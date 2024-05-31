@@ -17,12 +17,13 @@ file_path = r'C:\Users\DELL\Desktop\test'
 
 
 class StateMachine:
-    def __init__(self):
+    def __init__(self, file_path):
         self.state = "IDLE"
         self.collecting = False
         self.saving = False
-        self.sensor_files = [os.path.join(file_path, json_file) for json_file in os.listdir(file_path) if
-                             json_file.endswith('.json')]
+        self.file_path = file_path
+        self.sensor_files = [os.path.join(file_path, json_file) for json_file in os.listdir(file_path) if json_file.endswith('.json')]
+        self.running = True
 
     def set_state(self, state):
         self.state = state
@@ -34,8 +35,8 @@ class StateMachine:
     def get_state(self):
         return self.state
 
-    def server_recv(self, state_machine):
-        save_folder = state_machine.file_path
+    def server_recv(self):
+        save_folder = self.file_path
         s_listen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if not s_listen:
             print("Failed socket()")
@@ -43,7 +44,7 @@ class StateMachine:
         ip_port = ('192.168.1.125', 1)
         s_listen.bind(ip_port)
         s_listen.listen(5)
-        while state_machine.running:
+        while self.running:
             cnn, address = s_listen.accept()
             print("接受到一个连接：%s" % str(address))
             num_files_data = b''
@@ -83,24 +84,21 @@ class StateMachine:
             cnn.close()
         return num_files
 
-    def start_server_recv(self, state_machine):
-        Thread(target=server_recv, args=(state_machine,)).start()
+    def start_server_recv(self):
+        Thread(target=self.server_recv).start()
 
     def collect_data(self):
         if self.state == "COLLECTING":
             self.collecting = True
             for sensor_file in self.sensor_files:
                 sid, sname, location, port, baudrate, bytesize, stopbits, timeout, command, name1, range1_1, range1_2, name2, \
-                    range2_1, range2_2, dlocation, z_ip, zport, unit1, unit2, dcompute, path = self.decode_path(
-                    sensor_file)
+                    range2_1, range2_2, dlocation, z_ip, zport, unit1, unit2, dcompute, path = self.decode_path(sensor_file)
                 if path == "网口通信":
                     connect = self.zlan_connection(z_ip, int(zport))
                 elif path == "串口通信":
                     connect = self.modbus_th(port, baudrate, bytesize, stopbits, command)
-                sensor_num = server_recv()
-                data = self.run_main(connect, command, name1, name2, range1_1, range1_2, range2_1, range2_2, dcompute,
-                                     unit1, unit2,
-                                     sname, sid, location, dlocation, sensor_num)
+                sensor_num = self.server_recv()
+                data = self.run_main(connect, command, name1, name2, range1_1, range1_2, range2_1, range2_2, dcompute, unit1, unit2, sname, sid, location, dlocation, sensor_num)
                 if data:
                     return data
         return None
@@ -127,6 +125,10 @@ class StateMachine:
         self.set_state("STOP")
 
     def handle_new_file(self, file_data):
+        new_file_path = os.path.join(self.file_path, "new_sensor_config.json")
+        with open(new_file_path, 'w') as f:
+            json.dump(file_data, f)
+        self.sensor_files.append(new_file_path)
         return {"status": "new configuration applied"}
 
     def modbus_th(self, port, baud, data, stop, command):
@@ -198,8 +200,7 @@ class StateMachine:
         return sid, sname, location, port, baudrate, bytesize, stopbits, timeout, command, name1, range1_1, range1_2, \
             name2, range2_1, range2_2, dlocation, rs_ip, rs_port, unit1, unit2, dcompute, path
 
-    def run_main(self, connect, command, name1, name2, range1_1, range1_2, range2_1, range2_2, dcompute, unit1, unit2,
-                 sname, sid, location, dlocation, sensor_num):
+    def run_main(self, connect, command, name1, name2, range1_1, range1_2, range2_1, range2_2, dcompute, unit1, unit2, sname, sid, location, dlocation, sensor_num):
         th_data = self.send_command(connect, command)
         if name2 is None:
             data1 = self.decode_test1(th_data, range1_1, range1_2, int(dcompute))
@@ -259,8 +260,7 @@ class StateMachine:
 
 
 if __name__ == "__main__":
-    file_path = r'C:\Users\DELL\Desktop\test'
     state_machine = StateMachine(file_path)
     server = CommandServer('localhost', 12345, state_machine)
     server.start()
-    StateMachine.start_server_recv(state_machine)
+    state_machine.start_server_recv()
