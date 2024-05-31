@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>672</width>
+    <height>579</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>数据展示</string>
+  </property>
+  <widget class="QTableWidget" name="tableWidget_page6">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>100</y>
+     <width>621</width>
+     <height>421</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(255, 255, 255);
+font: 12pt &quot;华文宋体&quot;;</string>
+   </property>
+   <column>
+    <property name="text">
+     <string>设备名</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>编号</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>部署位置</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>数值</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>时间</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>数据库</string>
+    </property>
+   </column>
+  </widget>
+  <widget class="QTextBrowser" name="textBrowser_6data">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>60</y>
+     <width>311</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(255, 255, 255);
+font: 9pt &quot;华文宋体&quot;;</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_34">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>641</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 20pt &quot;华文宋体&quot;;
+background-color: rgb(239, 246, 255);
+border:1px solid rgb(74, 147, 221)
+
+</string>
+   </property>
+   <property name="text">
+    <string>传感器数据显示</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="widget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>641</width>
+     <height>551</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(211, 229, 255);
+border:1px solid rgb(74, 147, 221)</string>
+   </property>
+  </widget>
+  <zorder>widget</zorder>
+  <zorder>tableWidget_page6</zorder>
+  <zorder>textBrowser_6data</zorder>
+  <zorder>label_34</zorder>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
