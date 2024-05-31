@@ -4,10 +4,13 @@ import os
 import re
 import sqlite3
 import time
+from threading import Thread
+
 import serial
 import socket
 import pickle
 from s_recv import server_recv
+from state_socket import CommandServer
 
 db_file = 'sensor_data.db'
 file_path = r'C:\Users\DELL\Desktop\test'
@@ -30,6 +33,58 @@ class StateMachine:
 
     def get_state(self):
         return self.state
+
+    def server_recv(self, state_machine):
+        save_folder = state_machine.file_path
+        s_listen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if not s_listen:
+            print("Failed socket()")
+            exit()
+        ip_port = ('192.168.1.125', 1)
+        s_listen.bind(ip_port)
+        s_listen.listen(5)
+        while state_machine.running:
+            cnn, address = s_listen.accept()
+            print("接受到一个连接：%s" % str(address))
+            num_files_data = b''
+            while True:
+                data = cnn.recv(1)
+                if not data or data == b'\t':
+                    break
+                num_files_data += data
+            if not num_files_data:
+                break
+            num_files = int(num_files_data.decode().strip())
+            print(num_files)
+            for _ in range(num_files):
+                file_name = b''
+                while True:
+                    data = cnn.recv(1)
+                    if not data or data == b'\n':
+                        break
+                    file_name += data
+                if not file_name:
+                    break
+                file_name = file_name.decode().strip()
+                file_path = os.path.join(save_folder, file_name)
+                with open(file_path, 'wb') as fw:
+                    while True:
+                        data = cnn.recv(8192)
+                        if not data:
+                            break
+                        if data.endswith(b'quit\n'):
+                            fw.write(data[:-5])
+                            break
+                        else:
+                            fw.write(data)
+                    cnn.sendall(b'OK')
+                print(f"接收到文件：{file_name}")
+            print("recv over")
+            cnn.close()
+        return num_files
+
+    def start_server_recv(self, state_machine):
+        Thread(target=server_recv, args=(state_machine,)).start()
 
     def collect_data(self):
         if self.state == "COLLECTING":
@@ -72,7 +127,6 @@ class StateMachine:
         self.set_state("STOP")
 
     def handle_new_file(self, file_data):
-        sensor_num = server_recv()
         return {"status": "new configuration applied"}
 
     def modbus_th(self, port, baud, data, stop, command):
@@ -202,3 +256,11 @@ class StateMachine:
             print(f"Error: {e}")
         finally:
             client_socket.close()
+
+
+if __name__ == "__main__":
+    file_path = r'C:\Users\DELL\Desktop\test'
+    state_machine = StateMachine(file_path)
+    server = CommandServer('localhost', 12345, state_machine)
+    server.start()
+    StateMachine.start_server_recv(state_machine)
